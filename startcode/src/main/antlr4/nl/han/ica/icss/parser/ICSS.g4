@@ -39,44 +39,81 @@ MIN: '-';
 MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
+//Extra emil werk
+GREATER_THAN : '>';
+LESS_THAN : '<';
+GREATER_THAN_EQUAL : '>=';
+LESS_THAN_EQUAL_TO : '<=';
+EQUAL_TO  : '==';
+NOT_EQUAL_TO : '!=';
+
+AND : '&&';
+OR  : '||';
+NOT : '!';
+
 //--- PARSER: ---
+stylesheet:statements* EOF;
 
-// een groote regel met die alle kleinere regels aanroept
-// je maakt de method maar dan met de mogelijke combies inplaats van hardcode
-// zoals a {14} is het zelfde als de rule: selector ... close_brace; bijvoorbeeld
-// dingen die altijd vast zijn zoals haakjes kan je direct (Paars) erin doen maar dingen die
-// meerdere opties kunnen hebben plaats je in een regel (Geel) en dan roep je deze aan.
-// dit kan dus ook een regel (method) achting iets aanroepen zoals declaration die roep je aan met een * aan het einde
+statements: cssrules
+         | llcsrules;
 
-stylesheet:statement* EOF; // soort van main zonder dat het hier word geroepen gebeurt het niet.
+cssrules: selecty OPEN_BRACE blockofcontent* CLOSE_BRACE;
+llcsrules: CAPITAL_IDENT ASSIGNMENT_OPERATOR value SEMICOLON;
 
-statement: cssrule
-         | llcsrule;
+// --- everthing below me is a helper for a rule above.
 
-cssrule: selector OPEN_BRACE declaration* CLOSE_BRACE;
-llcsrule: CAPITAL_IDENT ASSIGNMENT_OPERATOR value SEMICOLON;
+declare: prop COLON value SEMICOLON;
 
+blockofcontent: declare
+              | ifexpr;
 
-calculate: termius ((PLUS | MIN) termius)*;
+ifexpr: IF BOX_BRACKET_OPEN expr BOX_BRACKET_CLOSE
+OPEN_BRACE value CLOSE_BRACE
+(ELSE OPEN_BRACE value CLOSE_BRACE)?;
+
+expr
+  : comparison
+  | expr AND expr
+  | expr OR expr
+  | NOT expr
+  | atom;
+
+ atom
+  : CAPITAL_IDENT
+  | TRUE
+  | FALSE
+  | calcus
+  | '(' expr ')';
+
+comparison: calcus compOp calcus
+          | atom compOp atom;
+
+ compOp
+   : GREATER_THAN
+   | LESS_THAN
+   | GREATER_THAN_EQUAL
+   | LESS_THAN_EQUAL_TO
+   | EQUAL_TO
+   | NOT_EQUAL_TO;
+
+calcus: termius ((PLUS | MIN) termius)*;
 
 termius: facto ((MUL)facto)* ;
 
-facto: literal
+facto: lite
         | CAPITAL_IDENT
-        | '(' calculate ')';
+        | '(' calcus ')';
 
-literal: COLOR
+lite: COLOR
        | PIXELSIZE
        | PERCENTAGE
        | SCALAR;
 
-selector: LOWER_IDENT
+selecty: LOWER_IDENT
         | ID_IDENT
         | CLASS_IDENT;
 
-declaration: property COLON value SEMICOLON;
-
-property: LOWER_IDENT;
+prop: LOWER_IDENT;
 
 value: COLOR
      | PIXELSIZE
@@ -85,5 +122,6 @@ value: COLOR
      | CAPITAL_IDENT
      | TRUE
      | FALSE
-     | calculate;
+     | calcus
+     | ifexpr;
 
