@@ -1,6 +1,5 @@
-package nl.han.ica.icss.parser;
+package nl.han.ica.datastructures;
 
-import nl.han.ica.datastructures.IHANStack;
 import java.util.ArrayList;
 
 public class HANStack<T> implements IHANStack<T> {
@@ -12,8 +11,8 @@ public class HANStack<T> implements IHANStack<T> {
     }
 
     @Override
-    public void push(Object value) {
-        list.add((T) value);
+    public void push(T value) {
+        list.add (value);
     }
 
     @Override
