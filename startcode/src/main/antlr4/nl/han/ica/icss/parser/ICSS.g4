@@ -122,6 +122,9 @@ value: COLOR
      | CAPITAL_IDENT
      | TRUE
      | FALSE
-     | calcus
-     | ifexpr;
+     | calcus;
+// TODO: zorg ervoor dat dit voor vervolg levels wel wordt meegenomen, maar misschien ergens anders.
+
+//     | ifexpr;
+
 
