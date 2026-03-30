@@ -15,7 +15,7 @@ public class ASTListener extends ICSSBaseListener {
 	public ASTListener() {
 		ast = new AST();
 		stack = new HANStack<>();
-		stack.push(ast.root);
+//		stack.push(ast.root);
 	}
 
 	// =====================
@@ -56,7 +56,11 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitCssrules(ICSSParser.CssrulesContext ctx) {
-		Stylerule rule = (Stylerule) stack.pop();
+		ASTNode node = stack.pop();
+		if (!(node instanceof Stylerule)) {
+			throw new RuntimeException("Expected Stylerule but got: " + node.getClass());
+		}
+		Stylerule rule = (Stylerule) node;
 		ASTNode parent = stack.peek();
 		parent.addChild(rule);
 	}
@@ -108,25 +112,6 @@ public class ASTListener extends ICSSBaseListener {
 		stack.peek().addChild(decl);
 	}
 
-	@Override
-	public void exitValue(ICSSParser.ValueContext ctx) {
-		if (ctx.COLOR() != null) {
-			stack.push(new ColorLiteral(ctx.COLOR().getText()));
-		} else if (ctx.PIXELSIZE() != null) {
-			stack.push(new PixelLiteral(ctx.PIXELSIZE().getText()));
-		} else if (ctx.PERCENTAGE() != null) {
-			stack.push(new PercentageLiteral(ctx.PERCENTAGE().getText()));
-		} else if (ctx.SCALAR() != null) {
-			stack.push(new ScalarLiteral(ctx.SCALAR().getText()));
-		} else if (ctx.TRUE() != null) {
-			stack.push(new BoolLiteral(true));
-		} else if (ctx.FALSE() != null) {
-			stack.push(new BoolLiteral(false));
-		} else if (ctx.CAPITAL_IDENT() != null) {
-			stack.push(new VariableReference(ctx.CAPITAL_IDENT().getText()));
-		}
-	}
-
 	// =====================
 	// LITERALS
 
@@ -148,8 +133,13 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitFacto(ICSSParser.FactoContext ctx) {
+		// DIT IS DE ENIGE PLEK VOOR VARIABELEN EN BOOLEANS
 		if (ctx.CAPITAL_IDENT() != null) {
 			stack.push(new VariableReference(ctx.getText()));
+		} else if (ctx.TRUE() != null) {
+			stack.push(new BoolLiteral(true));
+		} else if (ctx.FALSE() != null) {
+			stack.push(new BoolLiteral(false));
 		}
 	}
 
@@ -200,23 +190,31 @@ public class ASTListener extends ICSSBaseListener {
 	// EXPRESSIONS (IF - ELSE)
 
 	@Override
-	public void enterIfexpr(ICSSParser.IfexprContext ctx) {
+	public void enterIfblock(ICSSParser.IfblockContext ctx) {
 		IfClause ifClause = new IfClause();
-		stack.push(ifClause); // Zet de IF op de stack zodat kinderen (declarations) hierin landen
+		stack.push(ifClause);
 	}
 
 	@Override
-	public void exitIfexpr(ICSSParser.IfexprContext ctx) {
-		// Bij het verlaten van de IF staat de laatst gepushte expressie (de conditie)
-		// bovenop de IfClause op de stack.
+	public void exitIfblock(ICSSParser.IfblockContext ctx) {
 
-		ASTNode condition = stack.pop(); // De Expression
-		ASTNode ifNode = stack.pop();    // De IfClause
-
-		if (ifNode instanceof IfClause) {
-			((IfClause) ifNode).conditionalExpression = (Expression) condition;
+		ASTNode top = stack.pop();
+		if (top instanceof Expression) {
+			Expression condition = (Expression) top;
+			IfClause ifNode = (IfClause) stack.pop();
+			ifNode.conditionalExpression = condition;
 			stack.peek().addChild(ifNode);
+		} else if (top instanceof IfClause) {
 		}
 	}
 
+	@Override
+	public void enterElseblock(ICSSParser.ElseblockContext ctx) {
+
+	}
+
+	@Override
+	public void exitElseblock(ICSSParser.ElseblockContext ctx) {
+
+	}
 }

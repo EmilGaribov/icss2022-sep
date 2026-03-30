@@ -68,9 +68,14 @@ blockofcontent: declare
               | ifexpr;
 
 
-ifexpr: IF BOX_BRACKET_OPEN expr BOX_BRACKET_CLOSE
-        OPEN_BRACE blockofcontent* CLOSE_BRACE
-        (ELSE OPEN_BRACE blockofcontent* CLOSE_BRACE)?;
+ifexpr: ifblock elseblock?;
+
+ifblock:
+    IF BOX_BRACKET_OPEN expr BOX_BRACKET_CLOSE
+    OPEN_BRACE blockofcontent* CLOSE_BRACE;
+
+elseblock:
+    ELSE OPEN_BRACE blockofcontent* CLOSE_BRACE;
 
 expr
   : comparison
@@ -103,6 +108,8 @@ termius: facto ((MUL)facto)* ;
 
 facto: lite
         | CAPITAL_IDENT
+        | TRUE
+        | FALSE
         | '(' calcus ')';
 
 lite: COLOR
@@ -116,16 +123,6 @@ selecty: LOWER_IDENT
 
 prop: LOWER_IDENT;
 
-value: COLOR
-     | PIXELSIZE
-     | PERCENTAGE
-     | SCALAR
-     | CAPITAL_IDENT
-     | TRUE
-     | FALSE
-     | calcus;
-
-// TODO: zorg ervoor dat dit voor vervolg levels wel wordt meegenomen, maar misschien ergens anders.
-//
+value: calcus;
 
 
