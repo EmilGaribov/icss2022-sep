@@ -72,7 +72,8 @@ expression
   | variable
   | '(' expression ')'
   | NOT expression
-  | expression (MUL | PLUS | MIN) expression
+  | expression MUL expression
+  | expression (PLUS | MIN) expression
   | expression (GREATER_THAN | LESS_THAN | EQUAL_TO | NOT_EQUAL_TO | GREATER_THAN_EQUAL | LESS_THAN_EQUAL_TO) expression
   | expression (AND | OR) expression
   ;

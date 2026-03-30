@@ -153,15 +153,21 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitIfblock(ICSSParser.IfblockContext ctx) {
-		stack.pop();
+		IfClause ifNode = (IfClause) stack.pop();
+		if (!ifNode.getChildren().isEmpty() && ifNode.getChildren().get(0) instanceof Expression) {
+			ifNode.conditionalExpression = (Expression) ifNode.getChildren().remove(0);
+		}
 	}
 
 	@Override
 	public void enterElseblock(ICSSParser.ElseblockContext ctx) {
 		ElseClause elseNode = new ElseClause();
-		// Handmatige koppeling aan de IfClause die erboven staat
-		if (stack.peek() instanceof IfClause) {
-			((IfClause) stack.peek()).elseClause = elseNode;
+		ASTNode parent = stack.peek();
+		int lastIndex = parent.getChildren().size() - 1;
+
+		if (lastIndex >= 0 && parent.getChildren().get(lastIndex) instanceof IfClause) {
+			IfClause lastIf = (IfClause) parent.getChildren().get(lastIndex);
+			lastIf.elseClause = elseNode;
 		}
 		stack.push(elseNode);
 	}
