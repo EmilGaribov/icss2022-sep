@@ -67,9 +67,10 @@ declare: prop COLON value SEMICOLON;
 blockofcontent: declare
               | ifexpr;
 
+
 ifexpr: IF BOX_BRACKET_OPEN expr BOX_BRACKET_CLOSE
-OPEN_BRACE value CLOSE_BRACE
-(ELSE OPEN_BRACE value CLOSE_BRACE)?;
+        OPEN_BRACE blockofcontent* CLOSE_BRACE
+        (ELSE OPEN_BRACE blockofcontent* CLOSE_BRACE)?;
 
 expr
   : comparison
@@ -123,8 +124,8 @@ value: COLOR
      | TRUE
      | FALSE
      | calcus;
-// TODO: zorg ervoor dat dit voor vervolg levels wel wordt meegenomen, maar misschien ergens anders.
 
-//     | ifexpr;
+// TODO: zorg ervoor dat dit voor vervolg levels wel wordt meegenomen, maar misschien ergens anders.
+//
 
 

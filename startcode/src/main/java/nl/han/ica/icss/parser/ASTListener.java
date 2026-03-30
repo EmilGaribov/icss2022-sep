@@ -16,22 +16,10 @@ public class ASTListener extends ICSSBaseListener {
 		ast = new AST();
 		stack = new HANStack<>();
 		stack.push(ast.root);
-		// root in doen
 	}
 
 	// =====================
 	// ROOT
-
-//	@Override
-//	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
-//		Stylesheet stylesheet = new Stylesheet();
-//		stack.push(stylesheet);
-//	}
-//
-//	@Override
-//	public void exitStylesheet(ICSSParser.StylesheetContext ctx) {
-//		ast.setRoot((Stylesheet) stack.pop());
-//	}
 
 	@Override
 	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
@@ -69,8 +57,19 @@ public class ASTListener extends ICSSBaseListener {
 	@Override
 	public void exitCssrules(ICSSParser.CssrulesContext ctx) {
 		Stylerule rule = (Stylerule) stack.pop();
-		ASTNode parent = stack.peek(); // Stylesheet
+		ASTNode parent = stack.peek();
 		parent.addChild(rule);
+	}
+
+	@Override
+	public void exitLlcsrules(ICSSParser.LlcsrulesContext ctx) {
+		Expression val = (Expression) stack.pop();
+		VariableAssignment assignment = new VariableAssignment();
+
+		assignment.name = new VariableReference(ctx.CAPITAL_IDENT().getText());
+		assignment.expression = val;
+
+		stack.peek().addChild(assignment);
 	}
 
 	// =====================
@@ -102,27 +101,30 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitDeclare(ICSSParser.DeclareContext ctx) {
+		Expression val = (Expression) stack.pop();
 		Declaration decl = new Declaration(ctx.prop().getText());
+		decl.expression = val;
 
-		Expression value = createValue(ctx.value());
-		decl.expression = value;
-
-		Stylerule rule = (Stylerule) stack.peek();
-		rule.addChild(decl);
+		stack.peek().addChild(decl);
 	}
 
-	private Expression createValue(ICSSParser.ValueContext ctx) {
-
-		if (ctx.COLOR() != null) return new ColorLiteral(ctx.COLOR().getText());
-		if (ctx.PIXELSIZE() != null) return new PixelLiteral(ctx.PIXELSIZE().getText());
-		if (ctx.PERCENTAGE() != null) return new PercentageLiteral(ctx.PERCENTAGE().getText());
-		if (ctx.SCALAR() != null) return new ScalarLiteral(ctx.SCALAR().getText());
-		if (ctx.TRUE() != null) return new BoolLiteral(true);
-		if (ctx.FALSE() != null) return new BoolLiteral(false);
-		if (ctx.CAPITAL_IDENT() != null) return new VariableReference(ctx.CAPITAL_IDENT().getText());
-
-
-		throw new RuntimeException("Unknown value: " + ctx.getText());
+	@Override
+	public void exitValue(ICSSParser.ValueContext ctx) {
+		if (ctx.COLOR() != null) {
+			stack.push(new ColorLiteral(ctx.COLOR().getText()));
+		} else if (ctx.PIXELSIZE() != null) {
+			stack.push(new PixelLiteral(ctx.PIXELSIZE().getText()));
+		} else if (ctx.PERCENTAGE() != null) {
+			stack.push(new PercentageLiteral(ctx.PERCENTAGE().getText()));
+		} else if (ctx.SCALAR() != null) {
+			stack.push(new ScalarLiteral(ctx.SCALAR().getText()));
+		} else if (ctx.TRUE() != null) {
+			stack.push(new BoolLiteral(true));
+		} else if (ctx.FALSE() != null) {
+			stack.push(new BoolLiteral(false));
+		} else if (ctx.CAPITAL_IDENT() != null) {
+			stack.push(new VariableReference(ctx.CAPITAL_IDENT().getText()));
+		}
 	}
 
 	// =====================
@@ -130,14 +132,14 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitLite(ICSSParser.LiteContext ctx) {
-		if (ctx.COLOR() != null) {
-			stack.push(new ColorLiteral(ctx.getText()));
-		} else if (ctx.PIXELSIZE() != null) {
-			stack.push(new PixelLiteral(ctx.getText()));
-		} else if (ctx.PERCENTAGE() != null) {
-			stack.push(new PercentageLiteral(ctx.getText()));
-		} else if (ctx.SCALAR() != null) {
-			stack.push(new ScalarLiteral(ctx.getText()));
+		Expression lit = null;
+		if (ctx.COLOR() != null) lit = new ColorLiteral(ctx.getText());
+		else if (ctx.PIXELSIZE() != null) lit = new PixelLiteral(ctx.getText());
+		else if (ctx.PERCENTAGE() != null) lit = new PercentageLiteral(ctx.getText());
+		else if (ctx.SCALAR() != null) lit = new ScalarLiteral(ctx.getText());
+
+		if (lit != null) {
+			stack.push(lit);
 		}
 	}
 
@@ -193,4 +195,28 @@ public class ASTListener extends ICSSBaseListener {
 			stack.push(op);
 		}
 	}
+
+	// =====================
+	// EXPRESSIONS (IF - ELSE)
+
+	@Override
+	public void enterIfexpr(ICSSParser.IfexprContext ctx) {
+		IfClause ifClause = new IfClause();
+		stack.push(ifClause); // Zet de IF op de stack zodat kinderen (declarations) hierin landen
+	}
+
+	@Override
+	public void exitIfexpr(ICSSParser.IfexprContext ctx) {
+		// Bij het verlaten van de IF staat de laatst gepushte expressie (de conditie)
+		// bovenop de IfClause op de stack.
+
+		ASTNode condition = stack.pop(); // De Expression
+		ASTNode ifNode = stack.pop();    // De IfClause
+
+		if (ifNode instanceof IfClause) {
+			((IfClause) ifNode).conditionalExpression = (Expression) condition;
+			stack.peek().addChild(ifNode);
+		}
+	}
+
 }
