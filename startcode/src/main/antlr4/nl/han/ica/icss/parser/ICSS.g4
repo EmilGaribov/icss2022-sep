@@ -52,77 +52,43 @@ OR  : '||';
 NOT : '!';
 
 //--- PARSER: ---
-stylesheet:statements* EOF;
 
-statements: cssrules
-         | llcsrules;
+stylesheet: (cssrules | llcsrules)* EOF;
 
-cssrules: selecty OPEN_BRACE blockofcontent* CLOSE_BRACE;
-llcsrules: CAPITAL_IDENT ASSIGNMENT_OPERATOR value SEMICOLON;
+ruleBody: (declare | ifexpr | llcsrules)*;
 
-// --- everthing below me is a helper for a rule above.
+cssrules: selecty OPEN_BRACE ruleBody CLOSE_BRACE;
 
-declare: prop COLON value SEMICOLON;
+llcsrules: CAPITAL_IDENT ASSIGNMENT_OPERATOR expression SEMICOLON;
 
-blockofcontent: declare
-              | ifexpr;
-
+declare: prop COLON expression SEMICOLON;
 
 ifexpr: ifblock elseblock?;
+ifblock: IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE OPEN_BRACE ruleBody CLOSE_BRACE;
+elseblock: ELSE OPEN_BRACE ruleBody CLOSE_BRACE;
 
-ifblock:
-    IF BOX_BRACKET_OPEN expr BOX_BRACKET_CLOSE
-    OPEN_BRACE blockofcontent* CLOSE_BRACE;
+expression
+  : literal
+  | variable
+  | '(' expression ')'
+  | NOT expression
+  | expression (MUL | PLUS | MIN) expression
+  | expression (GREATER_THAN | LESS_THAN | EQUAL_TO | NOT_EQUAL_TO | GREATER_THAN_EQUAL | LESS_THAN_EQUAL_TO) expression
+  | expression (AND | OR) expression
+  ;
 
-elseblock:
-    ELSE OPEN_BRACE blockofcontent* CLOSE_BRACE;
-
-expr
-  : comparison
-  | expr AND expr
-  | expr OR expr
-  | NOT expr
-  | atom;
-
- atom
-  : CAPITAL_IDENT
+literal
+  : COLOR
+  | PIXELSIZE
+  | PERCENTAGE
+  | SCALAR
   | TRUE
   | FALSE
-  | calcus
-  | '(' expr ')';
+  ;
 
-comparison: calcus compOp calcus
-          | atom compOp atom;
+variable: CAPITAL_IDENT;
 
- compOp
-   : GREATER_THAN
-   | LESS_THAN
-   | GREATER_THAN_EQUAL
-   | LESS_THAN_EQUAL_TO
-   | EQUAL_TO
-   | NOT_EQUAL_TO;
-
-calcus: termius ((PLUS | MIN) termius)*;
-
-termius: facto ((MUL)facto)* ;
-
-facto: lite
-        | CAPITAL_IDENT
-        | TRUE
-        | FALSE
-        | '(' calcus ')';
-
-lite: COLOR
-       | PIXELSIZE
-       | PERCENTAGE
-       | SCALAR;
-
-selecty: LOWER_IDENT
-        | ID_IDENT
-        | CLASS_IDENT;
+selecty: LOWER_IDENT | ID_IDENT | CLASS_IDENT;
 
 prop: LOWER_IDENT;
-
-value: calcus;
-
 

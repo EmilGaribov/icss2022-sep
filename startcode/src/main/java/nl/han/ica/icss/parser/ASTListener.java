@@ -15,206 +15,159 @@ public class ASTListener extends ICSSBaseListener {
 	public ASTListener() {
 		ast = new AST();
 		stack = new HANStack<>();
-//		stack.push(ast.root);
-	}
-
-	// =====================
-	// ROOT
-
-	@Override
-	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
-		Stylesheet stylesheet = new Stylesheet();
-		stack.push(stylesheet);
-	}
-
-	@Override
-	public void exitStylesheet(ICSSParser.StylesheetContext ctx) {
-		Stylesheet stylesheet = (Stylesheet) stack.pop();
-		ast.setRoot(stylesheet);
-	}
-
-	@Override
-	public void enterStatements(ICSSParser.StatementsContext ctx) {
-	}
-
-	@Override
-	public void exitStatements(ICSSParser.StatementsContext ctx) {
 	}
 
 	public AST getAST() {
 		return ast;
 	}
 
+	private void addNode(ASTNode node) {
+			stack.peek().addChild(node);
+	}
+
+	@Override
+	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
+		Stylesheet stylesheet = new Stylesheet();
+		ast.setRoot(stylesheet);
+		stack.push(stylesheet);
+	}
+
+	@Override
+	public void exitStylesheet(ICSSParser.StylesheetContext ctx) {
+		stack.pop();
+	}
+
 	// =====================
-	// RULESET
+	// RULESETS & ASSIGNMENTS
+	// =====================
 
 	@Override
 	public void enterCssrules(ICSSParser.CssrulesContext ctx) {
 		Stylerule rule = new Stylerule();
+		addNode(rule);
 		stack.push(rule);
 	}
 
 	@Override
 	public void exitCssrules(ICSSParser.CssrulesContext ctx) {
-		ASTNode node = stack.pop();
-		if (!(node instanceof Stylerule)) {
-			throw new RuntimeException("Expected Stylerule but got: " + node.getClass());
-		}
-		Stylerule rule = (Stylerule) node;
-		ASTNode parent = stack.peek();
-		parent.addChild(rule);
+		stack.pop();
+	}
+
+	@Override
+	public void enterSelecty(ICSSParser.SelectyContext ctx) {
+		Selector selector;
+		if (ctx.LOWER_IDENT() != null) selector = new TagSelector(ctx.getText());
+		else if (ctx.ID_IDENT() != null) selector = new IdSelector(ctx.getText());
+		else selector = new ClassSelector(ctx.getText());
+
+		addNode(selector);
+	}
+
+	@Override
+	public void enterLlcsrules(ICSSParser.LlcsrulesContext ctx) {
+		VariableAssignment assignment = new VariableAssignment();
+		// De naam is een VariableReference (kind van de assignment)
+		assignment.addChild(new VariableReference(ctx.CAPITAL_IDENT().getText()));
+
+		addNode(assignment);
+		stack.push(assignment);
 	}
 
 	@Override
 	public void exitLlcsrules(ICSSParser.LlcsrulesContext ctx) {
-		Expression val = (Expression) stack.pop();
-		VariableAssignment assignment = new VariableAssignment();
-
-		assignment.name = new VariableReference(ctx.CAPITAL_IDENT().getText());
-		assignment.expression = val;
-
-		stack.peek().addChild(assignment);
+		stack.pop();
 	}
-
-	// =====================
-	// SELECTOR
-
-	@Override
-	public void exitSelecty(ICSSParser.SelectyContext ctx) {
-		Selector selector;
-
-		if (ctx.LOWER_IDENT() != null) {
-			selector = new TagSelector(ctx.getText());
-		} else if (ctx.ID_IDENT() != null) {
-			selector = new IdSelector(ctx.getText());
-		} else {
-			selector = new ClassSelector(ctx.getText());
-		}
-
-		Stylerule rule = (Stylerule) stack.peek();
-		rule.addChild(selector);
-	}
-
-	// =====================
-	// DECLARATION
-
 
 	@Override
 	public void enterDeclare(ICSSParser.DeclareContext ctx) {
+		Declaration decl = new Declaration(ctx.prop().getText());
+		addNode(decl);
+		stack.push(decl);
 	}
 
 	@Override
 	public void exitDeclare(ICSSParser.DeclareContext ctx) {
-		Expression val = (Expression) stack.pop();
-		Declaration decl = new Declaration(ctx.prop().getText());
-		decl.expression = val;
-
-		stack.peek().addChild(decl);
+		stack.pop();
 	}
 
 	// =====================
-	// LITERALS
-
-	@Override
-	public void exitLite(ICSSParser.LiteContext ctx) {
-		Expression lit = null;
-		if (ctx.COLOR() != null) lit = new ColorLiteral(ctx.getText());
-		else if (ctx.PIXELSIZE() != null) lit = new PixelLiteral(ctx.getText());
-		else if (ctx.PERCENTAGE() != null) lit = new PercentageLiteral(ctx.getText());
-		else if (ctx.SCALAR() != null) lit = new ScalarLiteral(ctx.getText());
-
-		if (lit != null) {
-			stack.push(lit);
-		}
-	}
-
+	// EXPRESSIES & OPERATIES
 	// =====================
-	// VARIABLE REFERENCE
 
 	@Override
-	public void exitFacto(ICSSParser.FactoContext ctx) {
-		// DIT IS DE ENIGE PLEK VOOR VARIABELEN EN BOOLEANS
-		if (ctx.CAPITAL_IDENT() != null) {
-			stack.push(new VariableReference(ctx.getText()));
-		} else if (ctx.TRUE() != null) {
-			stack.push(new BoolLiteral(true));
-		} else if (ctx.FALSE() != null) {
-			stack.push(new BoolLiteral(false));
-		}
-	}
-
-	// =====================
-	// EXPRESSION (*)
-
-
-	@Override
-	public void exitTermius(ICSSParser.TermiusContext ctx) {
-		if (ctx.getChildCount() == 1) return;
-
-		ASTNode right = stack.pop();
-		ASTNode left = stack.pop();
-
-		MultiplyOperation op = new MultiplyOperation();
-		op.addChild(left);
-		op.addChild(right);
-
-		stack.push(op);
-	}
-
-	// =====================
-	// EXPRESSIONS (+ -)
-
-	@Override
-	public void exitCalcus(ICSSParser.CalcusContext ctx) {
-		if (ctx.getChildCount() == 1) return;
-
-		ASTNode right = stack.pop();
-		ASTNode left = stack.pop();
-
-		String operator = ctx.getChild(1).getText();
-
-		if (operator.equals("+")) {
-			AddOperation op = new AddOperation();
-			op.addChild(left);
-			op.addChild(right);
-			stack.push(op);
-		} else {
-			SubtractOperation op = new SubtractOperation();
-			op.addChild(left);
-			op.addChild(right);
+	public void enterExpression(ICSSParser.ExpressionContext ctx) {
+		if (ctx.getChildCount() == 3 && ctx.expression().size() == 2) {
+			Operation op;
+			String operator = ctx.getChild(1).getText();
+			switch (operator) {
+				case "*": op = new MultiplyOperation(); break;
+				case "+": op = new AddOperation(); break;
+				case "-": op = new SubtractOperation(); break;
+				default: return;
+			}
+			addNode(op);
 			stack.push(op);
 		}
 	}
 
+	@Override
+	public void exitExpression(ICSSParser.ExpressionContext ctx) {
+		// Alleen poppen als we een operatie hebben gepusht
+		if (ctx.getChildCount() == 3 && ctx.expression().size() == 2) {
+			stack.pop();
+		}
+	}
+
 	// =====================
-	// EXPRESSIONS (IF - ELSE)
+	// LITERALS & VARIABLES
+	// =====================
+
+	@Override
+	public void enterLiteral(ICSSParser.LiteralContext ctx) {
+		ASTNode literal = null;
+		if (ctx.COLOR() != null) literal = new ColorLiteral(ctx.getText());
+		else if (ctx.PIXELSIZE() != null) literal = new PixelLiteral(ctx.getText());
+		else if (ctx.PERCENTAGE() != null) literal = new PercentageLiteral(ctx.getText());
+		else if (ctx.SCALAR() != null) literal = new ScalarLiteral(ctx.getText());
+		else if (ctx.TRUE() != null) literal = new BoolLiteral(true);
+		else if (ctx.FALSE() != null) literal = new BoolLiteral(false);
+
+		if (literal != null) addNode(literal);
+	}
+
+	@Override
+	public void enterVariable(ICSSParser.VariableContext ctx) {
+		addNode(new VariableReference(ctx.getText()));
+	}
+
+	// =====================
+	// IF / ELSE
+	// =====================
 
 	@Override
 	public void enterIfblock(ICSSParser.IfblockContext ctx) {
-		IfClause ifClause = new IfClause();
-		stack.push(ifClause);
+		IfClause ifNode = new IfClause();
+		addNode(ifNode);
+		stack.push(ifNode);
 	}
 
 	@Override
 	public void exitIfblock(ICSSParser.IfblockContext ctx) {
-
-		ASTNode top = stack.pop();
-		if (top instanceof Expression) {
-			Expression condition = (Expression) top;
-			IfClause ifNode = (IfClause) stack.pop();
-			ifNode.conditionalExpression = condition;
-			stack.peek().addChild(ifNode);
-		} else if (top instanceof IfClause) {
-		}
+		stack.pop();
 	}
 
 	@Override
 	public void enterElseblock(ICSSParser.ElseblockContext ctx) {
-
+		ElseClause elseNode = new ElseClause();
+		// Handmatige koppeling aan de IfClause die erboven staat
+		if (stack.peek() instanceof IfClause) {
+			((IfClause) stack.peek()).elseClause = elseNode;
+		}
+		stack.push(elseNode);
 	}
 
 	@Override
 	public void exitElseblock(ICSSParser.ElseblockContext ctx) {
-
+		stack.pop();
 	}
 }
