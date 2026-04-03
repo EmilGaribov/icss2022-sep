@@ -1,5 +1,7 @@
 package nl.han.ica.datastructures;
 
+import java.util.Iterator;
+
 public interface IHANLinkedList<T> {
     /**
      * Adds value to the front of the list
@@ -48,4 +50,6 @@ public interface IHANLinkedList<T> {
      * @return number of items in list
      */
     int getSize();
+
+    Iterator<T> iterator();
 }
