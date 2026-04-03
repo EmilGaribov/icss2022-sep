@@ -7,9 +7,8 @@ import nl.han.ica.icss.ast.literals.BoolLiteral;
 import nl.han.ica.icss.ast.literals.PercentageLiteral;
 import nl.han.ica.icss.ast.literals.PixelLiteral;
 import nl.han.ica.icss.ast.literals.ScalarLiteral;
-import nl.han.ica.icss.ast.operations.AddOperation;
-import nl.han.ica.icss.ast.operations.MultiplyOperation;
-import nl.han.ica.icss.ast.operations.SubtractOperation;
+import nl.han.ica.icss.ast.operations.*;
+import nl.han.ica.icss.ast.operations.OrOperation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,6 +56,21 @@ public class Evaluator implements Transform {
             } else if (expr instanceof MultiplyOperation) {
                 return multiply(left, right);
             }
+
+            else if (expr instanceof GreaterThanOperation) {
+                return greaterThan(left, right);
+            } else if (expr instanceof LessThanOperation) {
+                return lessThan(left, right);
+            } else if (expr instanceof EqualityOperation) {
+                return equality(left, right);
+            }
+
+            else if (expr instanceof AndOperation) {
+                return and(left, right);
+            }
+            else if (expr instanceof OrOperation) {
+                return or(left, right);
+            }
         }
         return null;
     }
@@ -91,7 +105,6 @@ public class Evaluator implements Transform {
         return 0;
     }
 
-    // Voorbeeld van de reken-logica
     private Literal add(Literal left, Literal right) {
         if (left instanceof PixelLiteral) {
             return new PixelLiteral(((PixelLiteral) left).value + ((PixelLiteral) right).value);
@@ -102,6 +115,40 @@ public class Evaluator implements Transform {
         return null;
     }
 
+    private Literal greaterThan(Literal left, Literal right) {
+        int valL = getLiteralValue(left);
+        int valR = getLiteralValue(right);
+        return new BoolLiteral(valL > valR);
+    }
+    private Literal lessThan(Literal left, Literal right) {
+        int valL = getLiteralValue(left);
+        int valR = getLiteralValue(right);
+        return new BoolLiteral(valL < valR);
+    }
+
+    private Literal equality(Literal left, Literal right) {
+        if (left instanceof PixelLiteral && right instanceof PixelLiteral) {
+            return new BoolLiteral(((PixelLiteral) left).value == ((PixelLiteral) right).value);
+        }
+        if (left instanceof BoolLiteral && right instanceof BoolLiteral) {
+            return new BoolLiteral(((BoolLiteral) left).value == ((BoolLiteral) right).value);
+        }
+        return new BoolLiteral(false);
+    }
+
+    private Literal and(Literal left, Literal right) {
+        if (left instanceof BoolLiteral && right instanceof BoolLiteral) {
+            return new BoolLiteral(((BoolLiteral) left).value && ((BoolLiteral) right).value);
+        }
+        return new BoolLiteral(false);
+    }
+
+    private Literal or(Literal left, Literal right) {
+        if (left instanceof BoolLiteral && right instanceof BoolLiteral) {
+            return new BoolLiteral(((BoolLiteral) left).value && ((BoolLiteral) right).value);
+        }
+        return new BoolLiteral(false);
+    }
 
     private void updateNodeChildren(ASTNode node, ArrayList<ASTNode> newChildren) {
         if (node instanceof Stylesheet) {

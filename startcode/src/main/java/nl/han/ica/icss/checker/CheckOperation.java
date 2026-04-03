@@ -15,32 +15,39 @@ public class CheckOperation {
         ExpressionType left = checkExpression.checkExpression(operation.lhs);
         ExpressionType right = checkExpression.checkExpression(operation.rhs);
 
-        if (left == ExpressionType.COLOR || right == ExpressionType.COLOR ||
-                left == ExpressionType.BOOL || right == ExpressionType.BOOL) {
-
-            operation.setError("Je mag niet rekenen met kleuren of booleans.");
-            return ExpressionType.UNDEFINED;
-        }
-
-        if (operation instanceof MultiplyOperation) {
-            if (left != ExpressionType.SCALAR && right != ExpressionType.SCALAR) {
-                operation.setError("Bij vermenigvuldigen moet minimaal één waarde een getal (scalar) zijn.");
+        if (operation instanceof AddOperation || operation instanceof SubtractOperation || operation instanceof MultiplyOperation) {
+            if (left == ExpressionType.COLOR || right == ExpressionType.COLOR ||
+                    left == ExpressionType.BOOL || right == ExpressionType.BOOL) {
+                operation.setError("Je mag niet rekenen met kleuren of booleans.");
                 return ExpressionType.UNDEFINED;
             }
-            return (left == ExpressionType.SCALAR) ? right : left;
-        }
 
-        if (operation instanceof AddOperation || operation instanceof SubtractOperation) {
-            if (left != right) {
-                operation.setError("Je kunt alleen gelijke types optellen of aftrekken (bijv. px bij px).");
-                return ExpressionType.UNDEFINED;
+            if (operation instanceof MultiplyOperation) {
+                if (left != ExpressionType.SCALAR && right != ExpressionType.SCALAR) {
+                    operation.setError("Bij vermenigvuldigen moet minimaal één waarde een getal (scalar) zijn.");
+                    return ExpressionType.UNDEFINED;
+                }
+                return (left == ExpressionType.SCALAR) ? right : left;
+            } else {
+                if (left != right) {
+                    operation.setError("Types moeten gelijk zijn voor optellen/aftrekken.");
+                    return ExpressionType.UNDEFINED;
+                }
+                return left;
             }
-            return left;
         }
 
-        if (operation instanceof GreaterThanOperation || operation instanceof LessThanOperation) {
+        if (operation instanceof GreaterThanOperation || operation instanceof LessThanOperation || operation instanceof EqualityOperation) {
             if (left != right) {
                 operation.setError("Je kunt alleen gelijke types vergelijken.");
+                return ExpressionType.UNDEFINED;
+            }
+            return ExpressionType.BOOL;
+        }
+
+        if (operation instanceof AndOperation || operation instanceof OrOperation) {
+            if (left != ExpressionType.BOOL || right != ExpressionType.BOOL) {
+                operation.setError("&& en || werken alleen met booleans.");
                 return ExpressionType.UNDEFINED;
             }
             return ExpressionType.BOOL;

@@ -103,6 +103,11 @@ public class ASTListener extends ICSSBaseListener {
 				case "*": op = new MultiplyOperation(); break;
 				case "+": op = new AddOperation(); break;
 				case "-": op = new SubtractOperation(); break;
+				case ">":  op = new GreaterThanOperation(); break;
+				case "<":  op = new LessThanOperation(); break;
+				case "==": op = new EqualityOperation(); break;
+				case "&&": op = new AndOperation(); break;
+				case "||": op = new OrOperation(); break;
 				default: return;
 			}
 			addNode(op);
@@ -112,7 +117,7 @@ public class ASTListener extends ICSSBaseListener {
 
 	@Override
 	public void exitExpression(ICSSParser.ExpressionContext ctx) {
-		// Alleen poppen als we een operatie hebben gepusht
+		// Alleen poppen als een operatie is gepusht
 		if (ctx.getChildCount() == 3 && ctx.expression().size() == 2) {
 			stack.pop();
 		}
