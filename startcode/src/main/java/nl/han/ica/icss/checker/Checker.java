@@ -43,19 +43,20 @@ public class Checker {
         }
     }
 
-    private void checkDeclaration(Declaration decl) {
+    public void checkDeclaration(Declaration decl) {
         ExpressionType valueType = checkExpression.checkExpression(decl.expression);
+        String propertyName = decl.property.name;
 
-        if (valueType == ExpressionType.UNDEFINED) return;
-
-        if (valueType == ExpressionType.SCALAR) {
-            decl.setError("Een getal zonder eenheid (px of %) is niet toegestaan voor een property.");
-            return;
+        if (propertyName.equals("width") || propertyName.equals("height")) {
+            if (valueType != ExpressionType.PIXEL && valueType != ExpressionType.PERCENTAGE) {
+                decl.setError("Property '" + propertyName + "' moet een pixel of percentage zijn.");
+            }
         }
 
-        String propertyName = decl.property.name;
-        if (propertyName.equals("color") && valueType != ExpressionType.COLOR) {
-            decl.setError("Property '" + propertyName + "' verwacht een kleur.");
+        else if (propertyName.equals("color") || propertyName.equals("background-color")) {
+            if (valueType != ExpressionType.COLOR) {
+                decl.setError("Property '" + propertyName + "' moet een kleurwaarde (#......) zijn.");
+            }
         }
     }
 }

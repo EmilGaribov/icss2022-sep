@@ -1,0 +1,43 @@
+BaseSize := 100px;
+BigSize := 200px;
+IsAdmin := TRUE;
+IsGuest := FALSE;
+StatusLevel := 10;
+
+h1 {
+    if [StatusLevel > 5] {
+        width: BigSize;
+    }
+
+    if [BaseSize < BigSize] {
+        height: BaseSize + 50px;
+    }
+}
+
+#alert {
+    if [IsAdmin == TRUE] {
+        color: #ff0000;
+    }
+
+    if [BaseSize == 100px] {
+        background-color: #eeeeee;
+    }
+}
+
+.sidebar {
+    if [IsAdmin && TRUE] {
+        width: 300px;
+    }
+
+    if [StatusLevel == 10 && IsAdmin] {
+        color: #00ff00;
+    }
+}
+
+button {
+    if [IsGuest == TRUE] {
+        color: #000000;
+    } else {
+        color: #ffffff;
+    }
+}

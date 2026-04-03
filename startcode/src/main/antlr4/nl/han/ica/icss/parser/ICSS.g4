@@ -42,14 +42,10 @@ ASSIGNMENT_OPERATOR: ':=';
 //Extra emil werk
 GREATER_THAN : '>';
 LESS_THAN : '<';
-GREATER_THAN_EQUAL : '>=';
-LESS_THAN_EQUAL_TO : '<=';
 EQUAL_TO  : '==';
-NOT_EQUAL_TO : '!=';
 
 AND : '&&';
 OR  : '||';
-NOT : '!';
 
 //--- PARSER: ---
 
@@ -71,10 +67,9 @@ expression
   : literal
   | variable
   | '(' expression ')'
-  | NOT expression
   | expression MUL expression
   | expression (PLUS | MIN) expression
-  | expression (GREATER_THAN | LESS_THAN | EQUAL_TO | NOT_EQUAL_TO | GREATER_THAN_EQUAL | LESS_THAN_EQUAL_TO) expression
+  | expression (GREATER_THAN | LESS_THAN | EQUAL_TO ) expression
   | expression (AND | OR) expression
   ;
 
